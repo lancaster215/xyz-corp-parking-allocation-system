@@ -17,7 +17,7 @@ const slotAllocationService = (carDetails, cp, allParkingSlotTest) => {
   }
   potentialParkingSlot = allParkingSlotTest.filter((d) => {
     let data;
-    if(d.size >= carDetails.size && d.occupied === false ){// && d.parkingdistance === Math.min(...distance)
+    if(d.size >= carDetails.size && d.occupied === false ){
       data = d;
     }
     return data;
@@ -34,6 +34,7 @@ export const ParkingSlot = ({ Slot, closestToGate, gate}) => {
   const carDetails = useSelector((state) => state.instances.carDetails);
 	const dispatch = useDispatch();
   const c_p = useSelector((state) => state.instances.c_p);
+  const carReturned = useSelector((state) => state.instances.carReturned);
   const [carTicket, setCarTicket] = React.useState();
   const [showCarTicketDetails, setShowCarTicketDetails] = React.useState(false);
   const [carTicketDetails, setCarTicketDetails] = React.useState();
@@ -140,9 +141,11 @@ export const ParkingSlot = ({ Slot, closestToGate, gate}) => {
             <li><Typography>Parking Gate: Gate {gate}</Typography></li>
             <li><Typography>Parking Slot: {carTicketDetails?.parkingslotid}</Typography></li>
             <li><Typography>Entry time: {carTicketDetails?.entrytime}</Typography> </li>
-            {/* <li><Typography>Exit time: {carTicketDetails?.exittime}</Typography></li>
-            <li><Typography>Parking duration: {getDateTimeDifference(carTicketDetails?.entrytime, carTicketDetails?.exittime)}</Typography></li>
-            <li><Typography>Parking fee: ₱{getParkingFee(Slot.size)}</Typography></li> */}
+            <li><Typography>Car License Number: {carTicket && carTicket[0]?.licensenumber}</Typography></li>
+            <li><Typography>Car Color: {carTicket && carTicket[0]?.color}</Typography></li>
+            <li><Typography>Car Size: {carTicket && sizes[carTicket[0]?.size]}</Typography></li>
+            {carReturned && (<><li><Typography>Exit time: {carTicketDetails?.exittime}</Typography></li>
+            <li><Typography>Return time: {carTicketDetails?.returntime}</Typography></li></>)}
           </ul>
         </div>
       }
@@ -154,8 +157,11 @@ export const ParkingSlot = ({ Slot, closestToGate, gate}) => {
             <li><Typography>Parking Gate {gate}</Typography></li>
             <li><Typography>Parking Slot: {carTicketDetails?.parkingslotid}</Typography></li>
             <li><Typography>Entry time: {carTicketDetails?.entrytime}</Typography> </li>
-            <li><Typography>Exit time: {carTicketDetails?.exittime}</Typography></li>
-            <li><Typography>Parking duration: {getDateTimeDifference(carTicketDetails?.entrytime, carTicketDetails?.exittime)}</Typography></li>
+            <li><Typography>Exit time: {'2022-09-28 17:30:54.702898'}</Typography></li>
+            <li><Typography>Car License Number: {carTicket && carTicket[0]?.licensenumber}</Typography></li>
+            <li><Typography>Car Color: {carTicket && carTicket[0]?.color}</Typography></li>
+            <li><Typography>Car Size: {carTicket && sizes[carTicket[0]?.size]}</Typography></li>
+            <li><Typography>Parking duration: {getDateTimeDifference(carTicketDetails?.entrytime, '2022-09-28 17:30:54.702898', carTicketDetails?.returntime, carReturned)}</Typography></li>
             <li><Typography>Parking fee: ₱{getParkingFee(Slot.size)}</Typography></li>
           </ul>
         </div>
