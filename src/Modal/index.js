@@ -36,7 +36,6 @@ export const CustomModal = (props) => {
           "Content-Type": "application/json",
         }
       }).then((res) => {
-        // console.log(res.data)
         setCarTicket(res.data);
       }).catch((err) => {
         console.log(err, 'Error getting new car ticket.')

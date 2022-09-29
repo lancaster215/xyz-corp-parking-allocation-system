@@ -76,7 +76,6 @@ export const ParkingSlot = ({ Slot, closestToGate, gate}) => {
           "Content-Type": "application/json",
         }
       }).then((res) => {
-        console.log(res.data)
         setCarTicket(res.data);
       }).catch((err) => {
         console.log(err, 'Error getting new car ticket.')
@@ -157,11 +156,11 @@ export const ParkingSlot = ({ Slot, closestToGate, gate}) => {
             <li><Typography>Parking Gate {gate}</Typography></li>
             <li><Typography>Parking Slot: {carTicketDetails?.parkingslotid}</Typography></li>
             <li><Typography>Entry time: {carTicketDetails?.entrytime}</Typography> </li>
-            <li><Typography>Exit time: {'2022-09-28 17:30:54.702898'}</Typography></li>
+            <li><Typography>Exit time: {carTicketDetails?.exittime}</Typography></li>
             <li><Typography>Car License Number: {carTicket && carTicket[0]?.licensenumber}</Typography></li>
             <li><Typography>Car Color: {carTicket && carTicket[0]?.color}</Typography></li>
             <li><Typography>Car Size: {carTicket && sizes[carTicket[0]?.size]}</Typography></li>
-            <li><Typography>Parking duration: {getDateTimeDifference(carTicketDetails?.entrytime, '2022-09-28 17:30:54.702898', carTicketDetails?.returntime, carReturned)}</Typography></li>
+            <li><Typography>Parking duration: {getDateTimeDifference(carTicketDetails?.entrytime, carTicketDetails?.exittime, carTicketDetails?.returntime, carReturned)}</Typography></li>
             <li><Typography>Parking fee: ₱{getParkingFee(Slot.size)}</Typography></li>
           </ul>
         </div>

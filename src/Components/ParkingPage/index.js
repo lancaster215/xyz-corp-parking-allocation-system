@@ -8,7 +8,7 @@ import { randomColors, plateNumberGenerator, IconComponent } from "../../util/ut
 import { colorsArray  } from "../../constants/const";
 import { ParkingGate } from "../ParkingGate";
 import { Grid, Typography} from "@mui/material";
-import { MainDiv, HeaderDiv, StyledButton, ListDiv } from "./classes";
+import { MainDiv, HeaderDiv, StyledButton, ListDiv, ParkingBorder } from "./classes";
 import { sizes } from "../../constants/const";
 import { CustomModal } from "../../Modal";
 
@@ -27,15 +27,9 @@ export const ParkingPage = () => {
   const [allExitedCars, setAllExitedCars] = React.useState();
   const [exitedCarDetails, setExitedCarDetails] = React.useState('');
 
-  const handleChange = ({target}) => {
-    // setParkingMessage({msg:"", state: false});
-    // dispatch(setCP(false));
-
+  const selectReturningCar = ({target}) => {
     dispatch(addNewCar(allExitedCars.filter((d) => d.licensenumber === target.value)[0]));
     setExitedCarDetails(target.value);
-
-
-    // setCarParked(true);
   };
 
   const parkReturningCar = () => {
@@ -108,7 +102,6 @@ export const ParkingPage = () => {
         "Content-Type": "application/json",
       }
     }).then((res) => {
-      // console.log(res.data)
       dispatch(addNewCar(res.data));
     }).catch((err) => {
       console.log(err, 'Error adding new Car.')
@@ -156,7 +149,7 @@ export const ParkingPage = () => {
         },
       }).then((res) => {
       }).catch((err) => console.log(err));
-
+      dispatch(setCarReturned(false));
       axios({
         method: "POST",
         url: "http://localhost:3001/api/addparkingticket",
@@ -221,7 +214,7 @@ export const ParkingPage = () => {
           <Grid item xs={3}>
             
             <StyledButton variant="contained" onClick={parkReturningCar}><Typography style={{fontSize: '0.70em'}}>Park Returning Car</Typography></StyledButton>
-            <select id="cars" onChange={handleChange} style={{
+            <select id="cars" onChange={selectReturningCar} style={{
               margin: '1em 0em',
               padding: '0.5em',
               borderRadius: '5px',
@@ -259,7 +252,8 @@ export const ParkingPage = () => {
           potentialSlot={potentialSlot}
           carDetails={carDetails}
           parkingTicket={parkingTicket}/>
-        <div style={{display: 'flex', justifyContent: 'space-around'}}>
+        <div style={{display: 'flex', position: 'relative', justifyContent: 'space-around'}}>
+        <ParkingBorder/>
           {
             allParkingGates?.map((gate, index) => {
               return (

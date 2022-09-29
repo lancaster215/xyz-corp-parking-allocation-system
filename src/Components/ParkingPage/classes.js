@@ -27,3 +27,11 @@ export const ListDiv = styled(Grid)`
         list-style-type: none;
     }
 `
+
+export const ParkingBorder = styled(Grid)`
+    position: absolute;
+    border: 5px dashed #DE5307;
+    width: 100%;
+    height: 100%;
+    margin: 8vh 0vh;
+`

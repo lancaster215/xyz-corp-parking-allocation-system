@@ -52,7 +52,7 @@ let hourDiff, dayDiff, returnAndExitHourDiff;
 export const getDateTimeDifference = (date1, date2, date3, carReturned) => {
   const date1ToArr = date1.split('');//date1=entrytime,
   const date2ToArr = date2.split('');//date2=exittime,
-  const date3ToArr = !carReturned ? date3.split('') : null;//date3=returntime,
+  const date3ToArr = carReturned ? date3.split('') : null;//date3=returntime,
   let hour1, hour2;
   let day1, day2;
   let returnHour = 0;
@@ -67,13 +67,11 @@ export const getDateTimeDifference = (date1, date2, date3, carReturned) => {
     hour2 = parseInt(date2ToArr[14] + date2ToArr[15])
   }
 
-  if(!carReturned){
+  if(carReturned){
     for(let z = 0; z <= date3ToArr.length - 1; z++){
       returnHour = parseInt(date3ToArr[14] + date3ToArr[15]);
     }
     returnAndExitHourDiff = hour2 - returnHour;
-  }else{
-    returnAndExitHourDiff = 0;
   }
 
   if(hour1 - hour2 !== 0) {
@@ -89,8 +87,20 @@ export const getDateTimeDifference = (date1, date2, date3, carReturned) => {
   return (dayDiff + "day/s and " + hourDiff + "hr/s");
 }
 
+const parkingFeeHelper = (returnVarValue, param, size) => {
+  let returnVar = returnVarValue;
+  if(size === 0) {
+    returnVar = Math.ceil(param) * 20;
+  }else if (size === 1){
+    returnVar = Math.ceil(param) * 60;
+  }else if (size === 2){
+    returnVar = Math.ceil(param) * 100;
+  }
+  return returnVar;
+}
+
 export const getParkingFee = (size, returningCar) => {
-  let finalHourToCompute = returnAndExitHourDiff > 0  ? Math.ceil(returnAndExitHourDiff) : Math.ceil(hourDiff)
+  let finalHourToCompute = returnAndExitHourDiff > 0 ? Math.ceil(returnAndExitHourDiff) : Math.ceil(hourDiff)
   let parkingFee = 0;
   let excessHour = finalHourToCompute - 24;
   let flatRate = 40;
@@ -98,37 +108,40 @@ export const getParkingFee = (size, returningCar) => {
   if(Math.ceil(finalHourToCompute) >= 24){ // 28hrs, 24hrs = 5000, 4hrs excess = +5000;
     let excessFee = 0;
 
-    if(size === 0) {
-      excessFee = Math.ceil(excessHour) * 20;
-    }else if (size === 1){
-      excessFee = Math.ceil(excessHour) * 60;
-    }else if (size === 2){
-      excessFee = Math.ceil(excessHour) * 100;
-    }
+    // if(size === 0) {
+    //   excessFee = Math.ceil(excessHour) * 20;
+    // }else if (size === 1){
+    //   excessFee = Math.ceil(excessHour) * 60;
+    // }else if (size === 2){
+    //   excessFee = Math.ceil(excessHour) * 100;
+    // }
+    excessFee = parkingFeeHelper(excessFee, excessHour, size);
     parkingFee = parkingFee + excessFee;
   }else{
     let excessHour = finalHourToCompute - 3;
     
     if(returningCar){ //boolean
       let hourlyFee = 0;
-      if(size === 0) {
-        hourlyFee = Math.ceil(finalHourToCompute) * 20;
-      }else if (size === 1){
-        hourlyFee = Math.ceil(finalHourToCompute) * 60;
-      }else if (size === 2){
-        hourlyFee = Math.ceil(finalHourToCompute) * 100;
-      }
+      // if(size === 0) {
+      //   hourlyFee = Math.ceil(finalHourToCompute) * 20;
+      // }else if (size === 1){
+      //   hourlyFee = Math.ceil(finalHourToCompute) * 60;
+      // }else if (size === 2){
+      //   hourlyFee = Math.ceil(finalHourToCompute) * 100;
+      // }
+      hourlyFee = parkingFeeHelper(hourlyFee, finalHourToCompute, size)
       parkingFee = hourlyFee;
     }else{
       if(Math.ceil(finalHourToCompute) > 3){ //5hrs
         let hourlyFee = 0;
-        if(size === 0) {
-          hourlyFee = Math.ceil(excessHour) * 20;
-        }else if (size === 1){
-          hourlyFee = Math.ceil(excessHour) * 60;
-        }else if (size === 2){
-          hourlyFee = Math.ceil(excessHour) * 100;
-        }
+        // if(size === 0) {
+        //   hourlyFee = Math.ceil(excessHour) * 20;
+        // }else if (size === 1){
+        //   hourlyFee = Math.ceil(excessHour) * 60;
+        // }else if (size === 2){
+        //   hourlyFee = Math.ceil(excessHour) * 100;
+        // }
+        hourlyFee = parkingFeeHelper(hourlyFee, excessHour, size);
         parkingFee = hourlyFee + flatRate;
       }else {
         parkingFee = flatRate;
