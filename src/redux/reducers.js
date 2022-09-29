@@ -2,13 +2,14 @@ import { combineReducers } from "redux";
 import { persistReducer } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 
-import { ADD_NEW_CAR, SET_POTENTIAL_SLOT, SET_CP, SET_CAR_EXITED } from "./actions";
+import { ADD_NEW_CAR, SET_POTENTIAL_SLOT, SET_CP, SET_CAR_EXITED, SET_CAR_RETURNED } from "./actions";
 
 const initialState = {
   carDetails: {},
   potentialSlot: {},
   c_p: false,
   carExited: false,
+  carReturned: false,
 };
 
 const instanceReducer = (state = initialState, action) => {
@@ -21,6 +22,8 @@ const instanceReducer = (state = initialState, action) => {
       return { ...state, c_p: action.payload};
     case SET_CAR_EXITED:
       return { ...state, carExited: action.payload};
+    case SET_CAR_RETURNED:
+      return { ...state, carReturned: action.payload};
     default:
       return state;
   }

@@ -47,13 +47,15 @@ export const parkingSizes = (id) => {
   return correspondingLetter.toUpperCase();
 }
 
-let hourDiff, dayDiff;
+let hourDiff, dayDiff, returnAndExitHourDiff;
 
-export const getDateTimeDifference = (date1, date2) => {
-  const date1ToArr = date1.split('');
-  const date2ToArr = date2.split('');
+export const getDateTimeDifference = (date1, date2, date3, carReturned) => {
+  const date1ToArr = date1.split('');//date1=entrytime,
+  const date2ToArr = date2.split('');//date2=exittime,
+  const date3ToArr = !carReturned ? date3.split('') : null;//date3=returntime,
   let hour1, hour2;
   let day1, day2;
+  let returnHour = 0;
 
   for(let x = 0; x <= date1ToArr.length - 1; x++){
     day1 = parseInt(date1ToArr[8] + date1ToArr[9]);
@@ -63,6 +65,15 @@ export const getDateTimeDifference = (date1, date2) => {
   for(let y = 0; y <= date2ToArr.length - 1; y++){
     day2 = parseInt(date2ToArr[8] + date2ToArr[9]);
     hour2 = parseInt(date2ToArr[14] + date2ToArr[15])
+  }
+
+  if(!carReturned){
+    for(let z = 0; z <= date3ToArr.length - 1; z++){
+      returnHour = parseInt(date3ToArr[14] + date3ToArr[15]);
+    }
+    returnAndExitHourDiff = hour2 - returnHour;
+  }else{
+    returnAndExitHourDiff = 0;
   }
 
   if(hour1 - hour2 !== 0) {
@@ -78,23 +89,52 @@ export const getDateTimeDifference = (date1, date2) => {
   return (dayDiff + "day/s and " + hourDiff + "hr/s");
 }
 
-export const getParkingFee = (size) => {
-  let parkingFee;
-  if(Math.ceil(hourDiff) === 24){
-    parkingFee = 5000; 
-  }
-  if(Math.ceil(hourDiff) > 3){
-    if(size === 0) {
-      parkingFee = Math.ceil(hourDiff) * 20;
-    }else if (size === 1){
-      parkingFee = Math.ceil(hourDiff) * 60;
-    }else if (size === 2){
-      parkingFee = Math.ceil(hourDiff) * 100;
-    }
-  }else {
-    parkingFee = 40;
-  }
+export const getParkingFee = (size, returningCar) => {
+  let finalHourToCompute = returnAndExitHourDiff > 0  ? Math.ceil(returnAndExitHourDiff) : Math.ceil(hourDiff)
+  let parkingFee = 0;
+  let excessHour = finalHourToCompute - 24;
+  let flatRate = 40;
+  
+  if(Math.ceil(finalHourToCompute) >= 24){ // 28hrs, 24hrs = 5000, 4hrs excess = +5000;
+    let excessFee = 0;
 
+    if(size === 0) {
+      excessFee = Math.ceil(excessHour) * 20;
+    }else if (size === 1){
+      excessFee = Math.ceil(excessHour) * 60;
+    }else if (size === 2){
+      excessFee = Math.ceil(excessHour) * 100;
+    }
+    parkingFee = parkingFee + excessFee;
+  }else{
+    let excessHour = finalHourToCompute - 3;
+    
+    if(returningCar){ //boolean
+      let hourlyFee = 0;
+      if(size === 0) {
+        hourlyFee = Math.ceil(finalHourToCompute) * 20;
+      }else if (size === 1){
+        hourlyFee = Math.ceil(finalHourToCompute) * 60;
+      }else if (size === 2){
+        hourlyFee = Math.ceil(finalHourToCompute) * 100;
+      }
+      parkingFee = hourlyFee;
+    }else{
+      if(Math.ceil(finalHourToCompute) > 3){ //5hrs
+        let hourlyFee = 0;
+        if(size === 0) {
+          hourlyFee = Math.ceil(excessHour) * 20;
+        }else if (size === 1){
+          hourlyFee = Math.ceil(excessHour) * 60;
+        }else if (size === 2){
+          hourlyFee = Math.ceil(excessHour) * 100;
+        }
+        parkingFee = hourlyFee + flatRate;
+      }else {
+        parkingFee = flatRate;
+      }
+    } 
+  }
   return parkingFee;
 }
 

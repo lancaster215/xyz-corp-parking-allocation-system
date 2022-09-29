@@ -2,6 +2,7 @@ export const ADD_NEW_CAR = "ADD_NEW_CAR";
 export const SET_POTENTIAL_SLOT = "SET_POTENTIAL_SLOT";
 export const SET_CP = "SET_CP";
 export const SET_CAR_EXITED = "SET_CAR_EXITED";
+export const SET_CAR_RETURNED = "SET_CAR_RETURNED";
 
 function dispatchHelper(type, payload) {
   return { type, payload };
@@ -21,4 +22,8 @@ export function setCP(...args) {
 
 export function setCarExited(...args) {
   return dispatchHelper(SET_CAR_EXITED, ...args);
+}
+
+export function setCarReturned(...args) {
+  return dispatchHelper(SET_CAR_RETURNED, ...args);
 }

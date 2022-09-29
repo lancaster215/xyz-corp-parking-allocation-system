@@ -2,12 +2,12 @@ import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import axios from 'axios';
 
-import { addNewCar, setPotentialSlot, setCP } from "../../redux/actions";
+import { addNewCar, setPotentialSlot, setCP, setCarReturned } from "../../redux/actions";
 
 import { randomColors, plateNumberGenerator, IconComponent } from "../../util/utils";
 import { colorsArray  } from "../../constants/const";
 import { ParkingGate } from "../ParkingGate";
-import { Grid, Typography } from "@mui/material";
+import { Grid, Typography} from "@mui/material";
 import { MainDiv, HeaderDiv, StyledButton, ListDiv } from "./classes";
 import { sizes } from "../../constants/const";
 import { CustomModal } from "../../Modal";
@@ -24,6 +24,62 @@ export const ParkingPage = () => {
   const [_addedParkingSlot, setAddedParkingSlot] = React.useState(false);
   const [openModal,setOpenModal] = React.useState(false);
   const [parkingTicket, setParkingTicket] = React.useState();
+  const [allExitedCars, setAllExitedCars] = React.useState();
+  const [exitedCarDetails, setExitedCarDetails] = React.useState('');
+
+  const handleChange = ({target}) => {
+    // setParkingMessage({msg:"", state: false});
+    // dispatch(setCP(false));
+
+    dispatch(addNewCar(allExitedCars.filter((d) => d.licensenumber === target.value)[0]));
+    setExitedCarDetails(target.value);
+
+
+    // setCarParked(true);
+  };
+
+  const parkReturningCar = () => {
+    setDispensedTicket(true);
+    if(potentialSlot === undefined){ //Means no parking lot available for that vehicle
+      setOpenModal(true);
+      setParkingMessage({msg: "No Available Parking lot for this vehicle", state: false});
+    }else{
+      setOpenModal(true);
+      setParkingMessage({msg: "Vehicle successfully parked!", state: true});
+      dispatch(addNewCar({}));
+      setDispensedTicket(false);
+      dispatch(setCP(true));
+
+      axios({
+        method: "POST",
+        url: "http://localhost:3001/api/updateparkingSlot",
+        data: {
+          psid: potentialSlot.id,
+          vid: carDetails.id,
+          state: true,
+        },
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }).then((res) => {
+      }).catch((err) => console.log(err));
+      dispatch(setCarReturned(true));
+
+      axios({
+        method: "POST",
+        url: "http://localhost:3001/api/updatereturntime",
+        data: {
+          vid: carDetails.id
+        }
+      })
+      .then((res) => {
+        setParkingTicket({vehicleid: carDetails.id});
+      }).catch((err) => {
+        // console.log(err, 'Error adding new Car.')
+      })
+    }
+    setCarParked(false);
+  }
 
   const addedParkingSlot = () => {
     setAddedParkingSlot(true)
@@ -52,6 +108,7 @@ export const ParkingPage = () => {
         "Content-Type": "application/json",
       }
     }).then((res) => {
+      // console.log(res.data)
       dispatch(addNewCar(res.data));
     }).catch((err) => {
       console.log(err, 'Error adding new Car.')
@@ -131,6 +188,20 @@ export const ParkingPage = () => {
     })
   }, [carDetails.size, carDetails.color, carDetails.licenseNumber, allParkingGates, potentialSlot, parkingTicket]);
 
+  React.useEffect(() => {
+    axios({
+      method: "GET",
+      url: "http://localhost:3001/api/getallparkingticket",
+      headers: {
+        "Content-Type": "application/json",
+      }
+    }).then((res) => {
+      setAllExitedCars(res.data.filter((d) => d.exittime !== null && d.returntime === null))
+    }).catch((err) => {
+      // console.log(err, 'Error adding new Parking Lot.')
+    })
+  },[exitedCarDetails, allExitedCars]);
+
   return (
     <div>
       <MainDiv container>
@@ -145,7 +216,24 @@ export const ParkingPage = () => {
             <StyledButton variant="contained" disabled={!carParked} onClick={carParked ? parkingService : null}>Park Car</StyledButton>
           </Grid>
           <Grid item xs={3}>
-            <StyledButton variant="contained" onClick={addParkingGate}>Add Parking Gate</StyledButton>
+            <StyledButton variant="contained" onClick={addParkingGate}><Typography style={{fontSize: '0.70em'}}>Add Parking Gate</Typography></StyledButton>
+          </Grid>
+          <Grid item xs={3}>
+            
+            <StyledButton variant="contained" onClick={parkReturningCar}><Typography style={{fontSize: '0.70em'}}>Park Returning Car</Typography></StyledButton>
+            <select id="cars" onChange={handleChange} style={{
+              margin: '1em 0em',
+              padding: '0.5em',
+              borderRadius: '5px',
+              background: '#FFFFFF',
+              border: '1px solid #007fff',
+              color: '#000000'
+            }}>
+              <option>SELECT CAR TO RETURN</option>
+              {allExitedCars?.map((name, i) => (
+                <option key={i}>{name.licensenumber}</option>
+              ))}
+            </select>
           </Grid>
         </Grid>
         <Grid style={{display: 'flex', justifyContent: 'center', width: '100%'}}>
