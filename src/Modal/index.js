@@ -24,25 +24,33 @@ const CustomList = styled(Grid)`
 `
 
 export const CustomModal = (props) => {
-  const { modalText, open, handleClose, potentialSlot, carDetails, showTicketDetails, parkingTicket } = props;
+  const { modalText, open, handleClose, showTicketDetails, parkingTicket } = props;
   const [carTicket, setCarTicket] = React.useState();
 
   React.useEffect(() => {
-    if(parkingTicket !== undefined){
-      axios({
-        method: "GET",
-        url: `http://localhost:3001/api/getticketvid/${parkingTicket.vehicleid}`,
-        headers: {
-          "Content-Type": "application/json",
+    if(parkingTicket){
+      try {
+        const fetchTicketVID = async() => {
+          const ticketVidData = await axios({
+            method: "GET",
+            url: `http://localhost:3001/api/getticketvid/${parkingTicket.vehicleid}`,
+            headers: {
+              "Content-Type": "application/json",
+            }
+          })
+          if(ticketVidData?.data.length <= 0) {
+            setTimeout(fetchTicketVID, 3000)
+            return;
+          }
+          setCarTicket(ticketVidData?.data)
         }
-      }).then((res) => {
-        // console.log(res.data)
-        setCarTicket(res.data);
-      }).catch((err) => {
+
+        fetchTicketVID()
+      } catch(err) {
         console.log(err, 'Error getting new car ticket.')
-      })
+      }
     }
-  }, [parkingTicket, potentialSlot, carDetails, carTicket])
+  }, [parkingTicket])
 
   return (
 		<Modal open={open} onClose={handleClose}>

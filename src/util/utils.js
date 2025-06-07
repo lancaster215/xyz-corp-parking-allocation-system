@@ -49,10 +49,10 @@ export const parkingSizes = (id) => {
 
 let hourDiff, dayDiff, returnAndExitHourDiff;
 
-export const getDateTimeDifference = (date1, date2, date3, carReturned) => {
-  const date1ToArr = date1.split('');//date1=entrytime,
-  const date2ToArr = date2.split('');//date2=exittime,
-  const date3ToArr = !carReturned ? date3.split('') : null;//date3=returntime,
+export const getDateTimeDifference = (carTicket, dateNow, carReturned) => {
+  const date1ToArr = carTicket?.entrytime.split('');//date1=entrytime,
+  const date2ToArr = dateNow.split('');//date2=exittime,
+  const date3ToArr = carReturned ? carTicket?.returntime.split('') : null;//date3=returntime,
   let hour1, hour2;
   let day1, day2;
   let returnHour = 0;
@@ -67,7 +67,7 @@ export const getDateTimeDifference = (date1, date2, date3, carReturned) => {
     hour2 = parseInt(date2ToArr[14] + date2ToArr[15])
   }
 
-  if(!carReturned){
+  if(carReturned){
     for(let z = 0; z <= date3ToArr.length - 1; z++){
       returnHour = parseInt(date3ToArr[14] + date3ToArr[15]);
     }
@@ -151,4 +151,21 @@ export const IconComponent = (props) => {
       height={props.height}
     />
   );
+}
+
+export const getFormattedNowDate = () => {
+  const now = new Date();
+
+  const year = now.getFullYear(); // returns 2025
+  const month = String(now.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
+  const day = String(now.getDate()).padStart(2, '0');
+
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+
+  const milliseconds = now.getMilliseconds(); // returns 0-999
+  const microseconds = String(milliseconds * 1000).padStart(6, '0'); // convert to 6-digit format
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${microseconds}`;
 }

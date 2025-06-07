@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import axios from 'axios';
 
-import { addNewCar, setPotentialSlot, setCP, setCarReturned } from "../../redux/actions";
+import { addNewCar, setCP, setCarReturned, setCarExited } from "../../redux/actions";
 
 import { randomColors, plateNumberGenerator, IconComponent } from "../../util/utils";
 import { colorsArray  } from "../../constants/const";
@@ -14,32 +14,26 @@ import { CustomModal } from "../../Modal";
 
 export const ParkingPage = () => {
   const dispatch = useDispatch();
-  const carDetails = useSelector((state) => state.instances.carDetails);
-  const potentialSlot = useSelector((state) => state.instances.potentialSlot);
+  const {carDetails, carExited, potentialSlot} = useSelector((state) => state.instances);
 
   const [allParkingGates, setAllParkingGates] = React.useState();
-  const [dispensedTicket, setDispensedTicket] = React.useState(false);
-  const [carParked, setCarParked] = React.useState(false);
+  // const [dispensedTicket, setDispensedTicket] = React.useState(false);
   const [parkingMessage, setParkingMessage] = React.useState({msg: '', state: false});
-  const [_addedParkingSlot, setAddedParkingSlot] = React.useState(false);
   const [openModal,setOpenModal] = React.useState(false);
   const [parkingTicket, setParkingTicket] = React.useState();
   const [allExitedCars, setAllExitedCars] = React.useState();
-  const [exitedCarDetails, setExitedCarDetails] = React.useState('');
+  // const [exitedCarDetails, setExitedCarDetails] = React.useState('');
+  const [addedParkingGate, setAddedParkingGate] = React.useState(false);
+  let isMounted = useRef(true);
+  const pollInterval = 3000;
 
   const handleChange = ({target}) => {
-    // setParkingMessage({msg:"", state: false});
-    // dispatch(setCP(false));
-
     dispatch(addNewCar(allExitedCars.filter((d) => d.licensenumber === target.value)[0]));
-    setExitedCarDetails(target.value);
-
-
-    // setCarParked(true);
+    // setExitedCarDetails(target.value);
   };
 
-  const parkReturningCar = () => {
-    setDispensedTicket(true);
+  const parkReturningCar = async () => {
+    // setDispensedTicket(true);
     if(potentialSlot === undefined){ //Means no parking lot available for that vehicle
       setOpenModal(true);
       setParkingMessage({msg: "No Available Parking lot for this vehicle", state: false});
@@ -47,56 +41,48 @@ export const ParkingPage = () => {
       setOpenModal(true);
       setParkingMessage({msg: "Vehicle successfully parked!", state: true});
       dispatch(addNewCar({}));
-      setDispensedTicket(false);
+      // setDispensedTicket(false);
       dispatch(setCP(true));
 
-      axios({
-        method: "POST",
-        url: "http://localhost:3001/api/updateparkingSlot",
-        data: {
-          psid: potentialSlot.id,
-          vid: carDetails.id,
-          state: true,
-        },
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }).then((res) => {
-      }).catch((err) => console.log(err));
-      dispatch(setCarReturned(true));
+      try {
+        await Promise.all([
+          axios({
+            method: "POST",
+            url: "http://localhost:3001/api/updatereturntime",
+            data: {
+              vid: carDetails.id
+            }
+          }),
+          axios({
+            method: "POST",
+            url: "http://localhost:3001/api/updateparkingslot",
+            data: {
+              psid: potentialSlot.id,
+              vid: carDetails.id,
+              state: true,
+            },
+            headers: {
+              "Content-Type": "application/json",
+            },
+          })
+        ])
 
-      axios({
-        method: "POST",
-        url: "http://localhost:3001/api/updatereturntime",
-        data: {
-          vid: carDetails.id
-        }
-      })
-      .then((res) => {
         setParkingTicket({vehicleid: carDetails.id});
-      }).catch((err) => {
-        // console.log(err, 'Error adding new Car.')
-      })
+      } catch (err) {
+        console.log()
+      }
+      dispatch(setCarReturned(true));
     }
-    setCarParked(false);
-  }
-
-  const addedParkingSlot = () => {
-    setAddedParkingSlot(true)
   }
 
   const closeModal = () => {
     setOpenModal(false);
-
     dispatch(addNewCar({}));
-    setDispensedTicket(false);
-    dispatch(setCP(true));
   }
 
-  const addCar = () => {
+  const addCar = async () => {
     setParkingMessage({msg:"", state: false});
-    dispatch(setCP(false));
-    axios({
+    await axios({
       method: "POST",
       url: "http://localhost:3001/api/addcar",
       data: {
@@ -108,99 +94,133 @@ export const ParkingPage = () => {
         "Content-Type": "application/json",
       }
     }).then((res) => {
-      // console.log(res.data)
+      dispatch(setCarExited(false));
       dispatch(addNewCar(res.data));
     }).catch((err) => {
       console.log(err, 'Error adding new Car.')
     })
-    dispatch(setPotentialSlot([]));
-
-    setCarParked(true);
+    
+    // dispatch(setPotentialSlot([]));
   }
 
-  const addParkingGate = () => {
-    axios({
-      method: "POST",
-      url: "http://localhost:3001/api/addparkinggate",
-      headers: {
-        "Content-Type": "application/json",
-      }
-    }).then((res) => {
-    }).catch((err) => {
+  const addParkingGate = async () => {
+    setAddedParkingGate(true)
+    try {
+      await axios({
+        method: "POST",
+        url: "http://localhost:3001/api/addparkinggate",
+        headers: {
+          "Content-Type": "application/json",
+        }
+      })
+    } catch(err) {
       console.log(err, 'Error adding new Parking Lot.')
-    })
+    }
   }
 
-  const parkingService = () => {
-    setDispensedTicket(true);
+  const parkingService = async () => {
+    // setDispensedTicket(true);
     if(potentialSlot === undefined){ //Means no parking lot available for that vehicle
       setOpenModal(true);
       setParkingMessage({msg: "No Available Parking lot for this vehicle", state: false});
     }else{
-      setOpenModal(true);
-      setParkingMessage({msg: "Vehicle successfully parked!", state: true});
-      dispatch(addNewCar({}));
-      setDispensedTicket(false);
-      dispatch(setCP(true));
+      try {
+        const [parkingTicket] = await Promise.all([
+          await axios({
+            method: "POST",
+            url: "http://localhost:3001/api/addparkingticket",
+            data: {
+              psid: potentialSlot.id,
+              vid: carDetails.id,
+            },
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }),
+          await axios({
+            method: "POST",
+            url: "http://localhost:3001/api/updateparkingslot",
+            data: {
+              psid: potentialSlot.id,
+              vid: carDetails.id,
+              state: true,
+            },
+            headers: {
+              "Content-Type": "application/json",
+            },
+          })
+        ])
+        const [parkingJSON] = await Promise.all([
+          parkingTicket.data,
+        ])
 
-      axios({
-        method: "POST",
-        url: "http://localhost:3001/api/updateparkingSlot",
-        data: {
-          psid: potentialSlot.id,
-          vid: carDetails.id,
-          state: true,
-        },
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }).then((res) => {
-      }).catch((err) => console.log(err));
+        if(parkingJSON) {
+          setOpenModal(true);
+          setParkingMessage({msg: "Vehicle successfully parked!", state: true});
+          dispatch(addNewCar({}));
+          dispatch(setCarReturned(false));
+          dispatch(setCP(true));
+        }
 
-      axios({
-        method: "POST",
-        url: "http://localhost:3001/api/addparkingticket",
-        data: {
-          psid: potentialSlot.id,
-          vid: carDetails.id,
-        },
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }).then((res) => {
-        setParkingTicket(res.data);
-      }).catch((err) => console.log(err));
+        setParkingTicket(parkingJSON);
+      } catch(err) {
+        setOpenModal(true);
+        setParkingMessage({msg: "There was an error encountered during parking!", state: false});
+      }
+      
     }
-    setCarParked(false);
   }
 
-  React.useEffect(() => {
-    axios({
-      method: "GET",
-      url: "http://localhost:3001/api/parkinggates",
-      headers: {
-        "Content-Type": "application/json",
+  const fetchParkingGateAndTicket = useCallback(async () => {
+    try {
+      const[parkingGateData, parkingTicketData] = await Promise.all([
+        axios({
+          method: 'GET',
+          url: "http://localhost:3001/api/parkinggates",
+          headers: {
+            "Content-Type": "application/json",
+          }
+        }),
+        axios({
+          method: "GET",
+          url: "http://localhost:3001/api/getallparkingticket",
+          headers: {
+            "Content-Type": "application/json",
+          }
+        })
+      ])
+      const [gateJSON, ticketJSON] = await Promise.all([
+        parkingGateData.data,
+        parkingTicketData.data,
+      ])
+
+      if(!gateJSON || !ticketJSON) {
+        if (isMounted.current) {
+          setTimeout(fetchParkingGateAndTicket, pollInterval);
+        }
+        return;
       }
-    }).then((res) => {
-      setAllParkingGates(res.data);
-    }).catch((err) => {
+      console.log(ticketJSON.filter((d) => d.exittime !== null && d.returntime === null), 'tickets')
+      setAllParkingGates(gateJSON);
+      setAllExitedCars(ticketJSON.filter((d) => d.exittime !== null && d.returntime === null))
+    } catch(err) {
       console.log(err, 'Error adding new Parking Lot.')
-    })
-  }, [carDetails.size, carDetails.color, carDetails.licenseNumber, allParkingGates, potentialSlot, parkingTicket]);
+    }
+  },[isMounted])
 
   React.useEffect(() => {
-    axios({
-      method: "GET",
-      url: "http://localhost:3001/api/getallparkingticket",
-      headers: {
-        "Content-Type": "application/json",
-      }
-    }).then((res) => {
-      setAllExitedCars(res.data.filter((d) => d.exittime !== null && d.returntime === null))
-    }).catch((err) => {
-      // console.log(err, 'Error adding new Parking Lot.')
-    })
-  },[exitedCarDetails, allExitedCars]);
+    fetchParkingGateAndTicket()
+    return () => {
+      isMounted.current = false;
+    };
+  }, [isMounted, fetchParkingGateAndTicket]);
+
+  React.useEffect(() => {
+    if(addedParkingGate || carExited){
+      fetchParkingGateAndTicket(); //fetch another
+      setAddedParkingGate(false)
+    }
+  },[addedParkingGate, carExited, fetchParkingGateAndTicket])
 
   return (
     <div>
@@ -210,10 +230,10 @@ export const ParkingPage = () => {
         </HeaderDiv>
         <Grid container>
           <Grid item xs={3}>
-            <StyledButton variant="contained" disabled={!_addedParkingSlot && dispensedTicket} color="primary" onClick={addCar}>Add Car</StyledButton>
+            <StyledButton variant="contained" color="primary" onClick={addCar}>Add Car</StyledButton>
           </Grid>
           <Grid item xs={3}>
-            <StyledButton variant="contained" disabled={!carParked} onClick={carParked ? parkingService : null}>Park Car</StyledButton>
+            <StyledButton variant="contained" onClick={parkingService}>Park Car</StyledButton>
           </Grid>
           <Grid item xs={3}>
             <StyledButton variant="contained" onClick={addParkingGate}><Typography style={{fontSize: '0.70em'}}>Add Parking Gate</Typography></StyledButton>
@@ -256,18 +276,14 @@ export const ParkingPage = () => {
           handleClose={closeModal}
           modalText={parkingMessage.msg}
           showTicketDetails={parkingMessage.state}
-          potentialSlot={potentialSlot}
-          carDetails={carDetails}
           parkingTicket={parkingTicket}/>
         <div style={{display: 'flex', justifyContent: 'space-around'}}>
           {
             allParkingGates?.map((gate, index) => {
               return (
                 <ParkingGate
-                  carParked={carParked}
                   gate={gate}
                   key={index}
-                  addedParkingSlot={addedParkingSlot}
                 />
               );
             })

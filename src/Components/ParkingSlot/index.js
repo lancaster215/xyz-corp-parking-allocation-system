@@ -3,124 +3,76 @@ import axios from "axios";
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-import { setPotentialSlot } from "../../redux/actions";
-import { getDateTimeDifference, getParkingFee } from "../../util/utils";
+import { getDateTimeDifference, getParkingFee, getFormattedNowDate } from "../../util/utils";
 import { ListDiv, StyledButton } from "./classes";
 import { sizes } from "../../constants/const";
+import { setCarExited } from "../../redux/actions";
 
-var potentialParkingSlot = [];
-
-const slotAllocationService = (carDetails, cp, allParkingSlotTest) => {
-  //resets if the car is already parked and given a ticket by the admin;
-  if(cp){
-    potentialParkingSlot = [];
-  }
-  potentialParkingSlot = allParkingSlotTest.filter((d) => {
-    let data;
-    if(d.size >= carDetails.size && d.occupied === false ){
-      data = d;
-    }
-    return data;
-  });
-  const parkingdistancesss = potentialParkingSlot.map(d => d.parkingdistance)
-  const lowest = Math.min(...parkingdistancesss);
-  const newbiew = potentialParkingSlot.filter((data) => {
-    return data.parkingdistance === lowest;
-  });
-  return newbiew[0];
-};
-
-export const ParkingSlot = ({ Slot, closestToGate, gate}) => {
-  const carDetails = useSelector((state) => state.instances.carDetails);
-	const dispatch = useDispatch();
-  const c_p = useSelector((state) => state.instances.c_p);
-  const carReturned = useSelector((state) => state.instances.carReturned);
+export const ParkingSlot = ({ Slot, gate}) => {
+  const dispatch = useDispatch();
+  const { carReturned } = useSelector((state) => state.instances);
   const [carTicket, setCarTicket] = React.useState();
+  const [localCarExited, setLocalCarExited] = React.useState(false)
   const [showCarTicketDetails, setShowCarTicketDetails] = React.useState(false);
-  const [carTicketDetails, setCarTicketDetails] = React.useState();
-  const [carExited, setCarExited] = React.useState(false);
 
-  const exitCar = ({ currentTarget }) => {
-    axios({
-      method: "POST",
-      url: `http://localhost:3001/api/updateparkingticket`,
-      data: {
-        vid: Slot.vehicleid,
-      }
-    })
-    .then((res) => {
-    }).catch((err) => {
-      console.log(err, 'Error updating parking ticket.')
-    })
+  const exitCar = async ({ currentTarget }) => {
+    try {
+      const [ticketIdData] = await Promise.all([
+        axios({
+          method: "GET",
+          url: `http://localhost:3001/api/getticketvid/${Slot.vehicleid}`,
+          headers: {
+            "Content-Type": "application/json",
+          }
+        }),
+        axios({
+          method: "POST",
+          url: `http://localhost:3001/api/updateparkingticket`,
+          data: {
+            vid: Slot.vehicleid,
+          }
+        }),
+        axios({
+          method: "POST",
+          url: "http://localhost:3001/api/updateparkingslot",
+          data: {
+            psid: currentTarget.value,
+            vid: Slot.vehicleid,
+            state: false,
+          },
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+      ])
+      setCarTicket(ticketIdData?.data)
+    } catch (err) {
+      console.log(err, 'Error getting new car ticket, updating parking ticket, or updating parking slot.')
+    }
 
-    axios({
-      method: "POST",
-      url: "http://localhost:3001/api/updateparkingslot",
-      data: {
-        psid: currentTarget.value,
-        vid: Slot.vehicleid,
-        state: false,
-      },
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }).then((res) => {
-    }).catch((err) => console.log(err));
-    
-    
     setTimeout(() => {
-      axios({
+      setLocalCarExited(true);
+      setShowCarTicketDetails(false);
+      dispatch(setCarExited(true));
+    }, 3000)
+  }
+
+  const showOccupiedCarDetails = async ({ target }) => {
+    setShowCarTicketDetails(true)
+    try {
+      await axios({
         method: "GET",
-        url: `http://localhost:3001/api/getticketvid/${Slot.vehicleid}`,
+        url: `http://localhost:3001/api/getticketvid/${target.value}`,
         headers: {
           "Content-Type": "application/json",
         }
       }).then((res) => {
-        console.log(res.data)
-        setCarTicket(res.data);
-      }).catch((err) => {
-        console.log(err, 'Error getting new car ticket.')
+        setCarTicket(res?.data);
       })
-    }, 2000)
-
-    setTimeout(() => {
-      setCarExited(true);
-    }, 3000)
-  }
-
-  const showOccupiedCarDetails = ({ target }) => {
-    setShowCarTicketDetails(true)
-    axios({
-      method: "GET",
-      url: `http://localhost:3001/api/getticketvid/${target.value}`,
-      headers: {
-        "Content-Type": "application/json",
-      }
-    }).then((res) => {
-      // console.log(res.data)
-      setCarTicket(res.data);
-    }).catch((err) => {
+    } catch (err) {
       console.log(err, 'Error getting new car ticket.')
-    })
-  }
-
-  React.useEffect(() => {
-    axios({
-      method: "GET",
-      url: 'http://localhost:3001/api/getallparkingslots',
-      headers: {
-        "Content-Type": "application/json",
-      }
-    })
-    .then((res) => {
-      dispatch(setPotentialSlot(slotAllocationService(carDetails, c_p, res.data)));
-    })
-    .catch((err) => console.log(err));
-
-    if(carTicket?.length > 0){
-      setCarTicketDetails(carTicket[0]);
     }
-  }, [Slot, carDetails, dispatch, c_p, closestToGate, carTicket]);
+  }
 
   return (
     <ListDiv style={{margin: `${Slot.parkingdistance+2}em 0em`, backgroundColor: `${Slot.occupied ? '#00800050' : '#ff000050'}`}}>
@@ -134,34 +86,44 @@ export const ParkingSlot = ({ Slot, closestToGate, gate}) => {
         {Slot.occupied && <StyledButton variant="contained" onClick={showOccupiedCarDetails} value={Slot.vehicleid}>Show Car Details</StyledButton>}
       </div>
             
-      {showCarTicketDetails &&
+      {showCarTicketDetails && carTicket &&
         <div style={{position: 'relative'}}>
           <button style={{position: 'absolute', right: 0, border: 'none'}} onClick={() => setShowCarTicketDetails(false)}>x</button>
           <ul>
             <li><Typography>Parking Gate: Gate {gate}</Typography></li>
-            <li><Typography>Parking Slot: {carTicketDetails?.parkingslotid}</Typography></li>
-            <li><Typography>Entry time: {carTicketDetails?.entrytime}</Typography> </li>
+            <li><Typography>Parking Slot: {carTicket && carTicket[0]?.parkingslotid}</Typography></li>
+            <li><Typography>Entry time: {carTicket && carTicket[0]?.entrytime}</Typography> </li>
             <li><Typography>Car License Number: {carTicket && carTicket[0]?.licensenumber}</Typography></li>
             <li><Typography>Car Color: {carTicket && carTicket[0]?.color}</Typography></li>
             <li><Typography>Car Size: {carTicket && sizes[carTicket[0]?.size]}</Typography></li>
-            {carReturned && (<><li><Typography>Exit time: {carTicketDetails?.exittime}</Typography></li>
-            <li><Typography>Return time: {carTicketDetails?.returntime}</Typography></li></>)}
+            {carReturned && (<><li><Typography>Exit time: {carTicket[0]?.exittime}</Typography></li>
+            <li><Typography>Return time: {carTicket && carTicket[0]?.returntime}</Typography></li></>)}
           </ul>
         </div>
       }
 
-      {carExited &&
+      {localCarExited && carTicket &&
         <div style={{position: 'relative'}}>
-          <button style={{position: 'absolute', right: 0, border: 'none'}} onClick={() => setCarExited(false)}>x</button>
+          <button 
+            style={{
+              position: 'absolute', 
+              right: 0, 
+              border: 'none'
+            }} 
+            onClick={() => {
+              setLocalCarExited(false);
+              dispatch(setCarExited(false))
+            }}
+          >x</button>
           <ul>
             <li><Typography>Parking Gate {gate}</Typography></li>
-            <li><Typography>Parking Slot: {carTicketDetails?.parkingslotid}</Typography></li>
-            <li><Typography>Entry time: {carTicketDetails?.entrytime}</Typography> </li>
+            <li><Typography>Parking Slot: {carTicket && carTicket[0]?.parkingslotid}</Typography></li>
+            <li><Typography>Entry time: {carTicket && carTicket[0]?.entrytime}</Typography> </li>
             <li><Typography>Exit time: {'2022-09-28 17:30:54.702898'}</Typography></li>
             <li><Typography>Car License Number: {carTicket && carTicket[0]?.licensenumber}</Typography></li>
             <li><Typography>Car Color: {carTicket && carTicket[0]?.color}</Typography></li>
             <li><Typography>Car Size: {carTicket && sizes[carTicket[0]?.size]}</Typography></li>
-            <li><Typography>Parking duration: {getDateTimeDifference(carTicketDetails?.entrytime, '2022-09-28 17:30:54.702898', carTicketDetails?.returntime, carReturned)}</Typography></li>
+            <li><Typography>Parking duration: {getDateTimeDifference(carTicket && carTicket[0], getFormattedNowDate(), carReturned)}</Typography></li>
             <li><Typography>Parking fee: ₱{getParkingFee(Slot.size)}</Typography></li>
           </ul>
         </div>
