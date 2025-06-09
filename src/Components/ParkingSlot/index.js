@@ -20,24 +20,20 @@ export const ParkingSlot = ({ Slot, gate}) => {
       const [ticketIdData] = await Promise.all([
         axios({
           method: "GET",
-          url: `http://localhost:3001/api/getticketvid/${Slot.vehicleid}`,
+          url: `http://localhost:3001/api/parkingticket/${Slot.vehicleid}`,
           headers: {
             "Content-Type": "application/json",
           }
         }),
         axios({
           method: "POST",
-          url: `http://localhost:3001/api/updateparkingticket`,
-          data: {
-            vid: Slot.vehicleid,
-          }
+          url: `http://localhost:3001/api/parkingticket/${Slot.vehicleid}`,
         }),
         axios({
           method: "POST",
-          url: "http://localhost:3001/api/updateparkingslot",
+          url: `http://localhost:3001/api/parkingslot/${Slot.vehicleid}`,
           data: {
             psid: currentTarget.value,
-            vid: Slot.vehicleid,
             state: false,
           },
           headers: {
@@ -62,7 +58,7 @@ export const ParkingSlot = ({ Slot, gate}) => {
     try {
       await axios({
         method: "GET",
-        url: `http://localhost:3001/api/getticketvid/${target.value}`,
+        url: `http://localhost:3001/api/parkingticket/${target.value}`,
         headers: {
           "Content-Type": "application/json",
         }

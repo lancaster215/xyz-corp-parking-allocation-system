@@ -17,23 +17,19 @@ export const ParkingPage = () => {
   const {carDetails, carExited, potentialSlot} = useSelector((state) => state.instances);
 
   const [allParkingGates, setAllParkingGates] = React.useState();
-  // const [dispensedTicket, setDispensedTicket] = React.useState(false);
   const [parkingMessage, setParkingMessage] = React.useState({msg: '', state: false});
   const [openModal,setOpenModal] = React.useState(false);
   const [parkingTicket, setParkingTicket] = React.useState();
   const [allExitedCars, setAllExitedCars] = React.useState();
-  // const [exitedCarDetails, setExitedCarDetails] = React.useState('');
   const [addedParkingGate, setAddedParkingGate] = React.useState(false);
   let isMounted = useRef(true);
   const pollInterval = 3000;
 
   const handleChange = ({target}) => {
     dispatch(addNewCar(allExitedCars.filter((d) => d.licensenumber === target.value)[0]));
-    // setExitedCarDetails(target.value);
   };
 
   const parkReturningCar = async () => {
-    // setDispensedTicket(true);
     if(potentialSlot === undefined){ //Means no parking lot available for that vehicle
       setOpenModal(true);
       setParkingMessage({msg: "No Available Parking lot for this vehicle", state: false});
@@ -41,24 +37,19 @@ export const ParkingPage = () => {
       setOpenModal(true);
       setParkingMessage({msg: "Vehicle successfully parked!", state: true});
       dispatch(addNewCar({}));
-      // setDispensedTicket(false);
       dispatch(setCP(true));
 
       try {
         await Promise.all([
           axios({
             method: "POST",
-            url: "http://localhost:3001/api/updatereturntime",
-            data: {
-              vid: carDetails.id
-            }
+            url: `http://localhost:3001/api/returntime/${carDetails.id}`,
           }),
           axios({
             method: "POST",
-            url: "http://localhost:3001/api/updateparkingslot",
+            url: `http://localhost:3001/api/parkingslot/${carDetails.id}`,
             data: {
               psid: potentialSlot.id,
-              vid: carDetails.id,
               state: true,
             },
             headers: {
@@ -84,7 +75,7 @@ export const ParkingPage = () => {
     setParkingMessage({msg:"", state: false});
     await axios({
       method: "POST",
-      url: "http://localhost:3001/api/addcar",
+      url: "http://localhost:3001/api/car",
       data: {
         size: Math.floor(Math.random() * 3).toString(),
         color: randomColors(colorsArray),
@@ -108,7 +99,7 @@ export const ParkingPage = () => {
     try {
       await axios({
         method: "POST",
-        url: "http://localhost:3001/api/addparkinggate",
+        url: "http://localhost:3001/api/parkinggate",
         headers: {
           "Content-Type": "application/json",
         }
@@ -128,7 +119,7 @@ export const ParkingPage = () => {
         const [parkingTicket] = await Promise.all([
           await axios({
             method: "POST",
-            url: "http://localhost:3001/api/addparkingticket",
+            url: "http://localhost:3001/api/parkingticket",
             data: {
               psid: potentialSlot.id,
               vid: carDetails.id,
@@ -139,10 +130,9 @@ export const ParkingPage = () => {
           }),
           await axios({
             method: "POST",
-            url: "http://localhost:3001/api/updateparkingslot",
+            url: `http://localhost:3001/api/parkingslot/${carDetails.id}`,
             data: {
               psid: potentialSlot.id,
-              vid: carDetails.id,
               state: true,
             },
             headers: {
@@ -183,7 +173,7 @@ export const ParkingPage = () => {
         }),
         axios({
           method: "GET",
-          url: "http://localhost:3001/api/getallparkingticket",
+          url: "http://localhost:3001/api/parkingtickets",
           headers: {
             "Content-Type": "application/json",
           }

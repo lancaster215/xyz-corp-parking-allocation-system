@@ -30,7 +30,7 @@ export const ParkingGate = (props) => {
     id.preventDefault();
     await axios({
       method: "POST",
-      url: "http://localhost:3001/api/addparkingslot",
+      url: "http://localhost:3001/api/parkingslot",
       data: {
         size: Math.floor(Math.random() * 3).toString(),
         occupied: false,
@@ -54,7 +54,7 @@ export const ParkingGate = (props) => {
         }),
         axios({
           method: "GET",
-          url: 'http://localhost:3001/api/getallparkingslots',
+          url: 'http://localhost:3001/api/parkingslots',
           headers: {
             "Content-Type": "application/json",
           }

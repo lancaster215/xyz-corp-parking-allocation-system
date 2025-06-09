@@ -33,7 +33,7 @@ export const CustomModal = (props) => {
         const fetchTicketVID = async() => {
           const ticketVidData = await axios({
             method: "GET",
-            url: `http://localhost:3001/api/getticketvid/${parkingTicket.vehicleid}`,
+            url: `http://localhost:3001/api/parkingticket/${parkingTicket.vehicleid}`,
             headers: {
               "Content-Type": "application/json",
             }
