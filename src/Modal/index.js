@@ -2,8 +2,8 @@ import React from "react";
 
 import { Modal, Typography, Box, Button, Grid } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import axios from "axios";
 import { sizes } from "../constants/const";
+import { getParkingTicketById } from "../api";
 
 const CustomBox = styled(Box)`
   position: absolute;
@@ -31,13 +31,7 @@ export const CustomModal = (props) => {
     if(parkingTicket){
       try {
         const fetchTicketVID = async() => {
-          const ticketVidData = await axios({
-            method: "GET",
-            url: `http://localhost:3001/api/parkingticket/${parkingTicket.vehicleid}`,
-            headers: {
-              "Content-Type": "application/json",
-            }
-          })
+          const ticketVidData = await getParkingTicketById(`/parkingticket/${parkingTicket.vehicleid}`)
           if(ticketVidData?.data.length <= 0) {
             setTimeout(fetchTicketVID, 3000)
             return;

@@ -1,5 +1,4 @@
 import { Typography } from "@mui/material";
-import axios from "axios";
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -7,6 +6,11 @@ import { getDateTimeDifference, getParkingFee, getFormattedNowDate } from "../..
 import { ListDiv, StyledButton } from "./classes";
 import { sizes } from "../../constants/const";
 import { setCarExited } from "../../redux/actions";
+import { 
+  getParkingTicketById,
+  updateParkingTicketById,
+  updateParkingSlotPerId
+} from "../../api";
 
 export const ParkingSlot = ({ Slot, gate}) => {
   const dispatch = useDispatch();
@@ -18,28 +22,15 @@ export const ParkingSlot = ({ Slot, gate}) => {
   const exitCar = async ({ currentTarget }) => {
     try {
       const [ticketIdData] = await Promise.all([
-        axios({
-          method: "GET",
-          url: `http://localhost:3001/api/parkingticket/${Slot.vehicleid}`,
-          headers: {
-            "Content-Type": "application/json",
-          }
-        }),
-        axios({
-          method: "POST",
-          url: `http://localhost:3001/api/parkingticket/${Slot.vehicleid}`,
-        }),
-        axios({
-          method: "POST",
-          url: `http://localhost:3001/api/parkingslot/${Slot.vehicleid}`,
-          data: {
+        getParkingTicketById(`/parkingticket/${Slot.vehicleid}`),
+        updateParkingTicketById(`/parkingticket/${Slot.vehicleid}`),
+        updateParkingSlotPerId(
+          `/parkingslot/${Slot.vehicleid}`,
+          {
             psid: currentTarget.value,
             state: false,
-          },
-          headers: {
-            "Content-Type": "application/json",
-          },
-        })
+          }
+        )
       ])
       setCarTicket(ticketIdData?.data)
     } catch (err) {
@@ -56,13 +47,7 @@ export const ParkingSlot = ({ Slot, gate}) => {
   const showOccupiedCarDetails = async ({ target }) => {
     setShowCarTicketDetails(true)
     try {
-      await axios({
-        method: "GET",
-        url: `http://localhost:3001/api/parkingticket/${target.value}`,
-        headers: {
-          "Content-Type": "application/json",
-        }
-      }).then((res) => {
+      await getParkingTicketById(`/parkingticket/${target.value}`).then((res) => {
         setCarTicket(res?.data);
       })
     } catch (err) {

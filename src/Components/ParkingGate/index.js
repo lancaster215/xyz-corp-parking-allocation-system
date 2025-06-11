@@ -1,5 +1,4 @@
 import React, { useCallback, useRef } from "react";
-import axios from "axios";
 
 import { parkingSizes } from "../../util/utils";
 import { ParkingSlot } from "../ParkingSlot";
@@ -7,6 +6,11 @@ import { StyledButton } from "./classes";
 import { Typography } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { setPotentialSlot } from "../../redux/actions";
+import { 
+  getParkingSlotPerId,
+  getAllParkingSlots,
+  addNewParkingSlot
+} from "../../api";
 
 export const ParkingGate = (props) => {
   const dispatch = useDispatch()
@@ -28,16 +32,16 @@ export const ParkingGate = (props) => {
   
   const addParkingSlotById = async (id) => {
     id.preventDefault();
-    await axios({
-      method: "POST",
-      url: "http://localhost:3001/api/parkingslot",
-      data: {
+    await addNewParkingSlot(
+      "POST",
+      '/parkingslot',
+      {
         size: Math.floor(Math.random() * 3).toString(),
         occupied: false,
         parkingGateId: id.target.value,
         parkingDistance: Math.floor(Math.random() * 5) //the parking gate muna yung distance
-      },
-    }).catch((err) => console.log(err));
+      }
+    ).catch((err) => console.log(err));
 
     setAddedParkingSlot(true)
   };
@@ -45,20 +49,8 @@ export const ParkingGate = (props) => {
   const fetchPakingSlotById = useCallback(async(carDetails) => {
     try {
       const [parkingSlotDataPerId, parkingSlotData] = await Promise.all([
-        axios({
-          method: "GET",
-          url: `http://localhost:3001/api/getparkingslot/${gate.id}`,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }),
-        axios({
-          method: "GET",
-          url: 'http://localhost:3001/api/parkingslots',
-          headers: {
-            "Content-Type": "application/json",
-          }
-        })
+        getParkingSlotPerId(`/parkingslot/${gate.id}`),
+        getAllParkingSlots('/parkingslots')
       ])
 
       const [parkingSlotPerIdJSON, parkingSlotDataJSON] = await Promise.all([

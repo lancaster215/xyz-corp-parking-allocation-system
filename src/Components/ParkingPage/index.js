@@ -1,6 +1,5 @@
 import React, { useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import axios from 'axios';
 
 import { addNewCar, setCP, setCarReturned, setCarExited } from "../../redux/actions";
 
@@ -11,6 +10,15 @@ import { Grid, Typography} from "@mui/material";
 import { MainDiv, HeaderDiv, StyledButton, ListDiv } from "./classes";
 import { sizes } from "../../constants/const";
 import { CustomModal } from "../../Modal";
+import { 
+  getParkingGates, 
+  getParkingTickets, 
+  updateReturnTime, 
+  updateParkingSlotPerId,
+  postNewCar,
+  addNewParkingGate,
+  addNewParkingTicket,
+} from "../../api";
 
 export const ParkingPage = () => {
   const dispatch = useDispatch();
@@ -40,22 +48,15 @@ export const ParkingPage = () => {
       dispatch(setCP(true));
 
       try {
-        await Promise.all([
-          axios({
-            method: "POST",
-            url: `http://localhost:3001/api/returntime/${carDetails.id}`,
-          }),
-          axios({
-            method: "POST",
-            url: `http://localhost:3001/api/parkingslot/${carDetails.id}`,
-            data: {
+        await Promise.all([ 
+          updateReturnTime(`/returntime/${carDetails.id}`),
+          updateParkingSlotPerId(
+            `/parkingslot/${carDetails.id}`, 
+            {
               psid: potentialSlot.id,
               state: true,
-            },
-            headers: {
-              "Content-Type": "application/json",
-            },
-          })
+            }
+          )
         ])
 
         setParkingTicket({vehicleid: carDetails.id});
@@ -73,72 +74,51 @@ export const ParkingPage = () => {
 
   const addCar = async () => {
     setParkingMessage({msg:"", state: false});
-    await axios({
-      method: "POST",
-      url: "http://localhost:3001/api/car",
-      data: {
+    await postNewCar(
+      '/car', 
+      {
         size: Math.floor(Math.random() * 3).toString(),
         color: randomColors(colorsArray),
         licenseNumber: plateNumberGenerator()
-      },
-      headers: {
-        "Content-Type": "application/json",
       }
-    }).then((res) => {
+    ).then((res) => {
       dispatch(setCarExited(false));
       dispatch(addNewCar(res.data));
     }).catch((err) => {
       console.log(err, 'Error adding new Car.')
     })
-    
-    // dispatch(setPotentialSlot([]));
   }
 
   const addParkingGate = async () => {
     setAddedParkingGate(true)
     try {
-      await axios({
-        method: "POST",
-        url: "http://localhost:3001/api/parkinggate",
-        headers: {
-          "Content-Type": "application/json",
-        }
-      })
+      await addNewParkingGate('/parkinggate')
     } catch(err) {
       console.log(err, 'Error adding new Parking Lot.')
     }
   }
 
   const parkingService = async () => {
-    // setDispensedTicket(true);
     if(potentialSlot === undefined){ //Means no parking lot available for that vehicle
       setOpenModal(true);
       setParkingMessage({msg: "No Available Parking lot for this vehicle", state: false});
     }else{
       try {
         const [parkingTicket] = await Promise.all([
-          await axios({
-            method: "POST",
-            url: "http://localhost:3001/api/parkingticket",
-            data: {
+          addNewParkingTicket(
+            '/parkingticket',
+            {
               psid: potentialSlot.id,
               vid: carDetails.id,
-            },
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }),
-          await axios({
-            method: "POST",
-            url: `http://localhost:3001/api/parkingslot/${carDetails.id}`,
-            data: {
+            }
+          ),
+          updateParkingSlotPerId(
+            `/parkingslot/${carDetails.id}`,
+            {
               psid: potentialSlot.id,
               state: true,
-            },
-            headers: {
-              "Content-Type": "application/json",
-            },
-          })
+            }
+          )
         ])
         const [parkingJSON] = await Promise.all([
           parkingTicket.data,
@@ -157,27 +137,14 @@ export const ParkingPage = () => {
         setOpenModal(true);
         setParkingMessage({msg: "There was an error encountered during parking!", state: false});
       }
-      
     }
   }
 
   const fetchParkingGateAndTicket = useCallback(async () => {
     try {
-      const[parkingGateData, parkingTicketData] = await Promise.all([
-        axios({
-          method: 'GET',
-          url: "http://localhost:3001/api/parkinggates",
-          headers: {
-            "Content-Type": "application/json",
-          }
-        }),
-        axios({
-          method: "GET",
-          url: "http://localhost:3001/api/parkingtickets",
-          headers: {
-            "Content-Type": "application/json",
-          }
-        })
+      const[parkingGateData, parkingTicketData] = await Promise.all([ 
+        getParkingGates('/parkinggates'),
+        getParkingTickets('/parkingtickets'),
       ])
       const [gateJSON, ticketJSON] = await Promise.all([
         parkingGateData.data,
@@ -190,7 +157,7 @@ export const ParkingPage = () => {
         }
         return;
       }
-      console.log(ticketJSON.filter((d) => d.exittime !== null && d.returntime === null), 'tickets')
+
       setAllParkingGates(gateJSON);
       setAllExitedCars(ticketJSON.filter((d) => d.exittime !== null && d.returntime === null))
     } catch(err) {
